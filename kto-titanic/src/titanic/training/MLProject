@@ -2,7 +2,7 @@ name: kto-titanic
 
 docker_env:
   image: quay.io/onepieceisrealdude/titanic/experiment
-  
+
 entry_points:
 
   main:
