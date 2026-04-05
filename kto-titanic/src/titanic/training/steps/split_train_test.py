@@ -1,8 +1,12 @@
 import logging
 from pathlib import Path
+import tempfile
 
+import mlflow
 import pandas as pd
 import sklearn.model_selection
+
+client = mlflow.MlflowClient()
 
 FEATURES = ["Pclass", "Sex", "SibSp", "Parch"]
 TARGET = "Survived"
@@ -11,7 +15,10 @@ TARGET = "Survived"
 def split_train_test(data_path: str) -> tuple[str, str, str, str]:
     logging.warning(f"split on {data_path}")
 
-    df = pd.read_csv(data_path, index_col=False)
+    df = pd.read_csv(
+        client.download_artifacts(run_id=mlflow.active_run().info.run_id, path=data_path),
+        index_col=False,
+    )
 
     y = df[TARGET]
     x = df[FEATURES]
@@ -20,16 +27,18 @@ def split_train_test(data_path: str) -> tuple[str, str, str, str]:
     )
 
     datasets = [
-        (x_train, "xtrain.csv"),
-        (x_test, "xtest.csv"),
-        (y_train, "ytrain.csv"),
-        (y_test, "ytest.csv"),
+        (x_train, "xtrain", "xtrain.csv"),
+        (x_test, "xtest", "xtest.csv"),
+        (y_train, "ytrain", "ytrain.csv"),
+        (y_test, "ytest", "ytest.csv"),
     ]
 
     artifact_paths = []
-    for data, filename in datasets:
-        file_path = Path("./dist/", filename)
-        data.to_csv(file_path, index=False)
-        artifact_paths.append(str(file_path))
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        for data, artifact_path, filename in datasets:
+            file_path = Path(tmp_dir, filename)
+            data.to_csv(file_path, index=False)
+            mlflow.log_artifact(str(file_path), artifact_path)
+            artifact_paths.append(f"{artifact_path}/{filename}")
 
     return tuple(artifact_paths)
