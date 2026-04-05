@@ -1,8 +1,9 @@
 from unittest.mock import Mock, patch
+import builtins
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
-import builtins
 
 
 mock_model = Mock()
@@ -34,6 +35,14 @@ with (
     patch("titanic.api.infer.verify_token", mock_verify_factory),
 ):
     from titanic.api.infer import app
+
+
+@pytest.fixture(autouse=True)
+def reset_oauth_env():
+    import os
+    """Force OAUTH2_DOMAIN à vide pour tous les tests."""
+    with patch.dict(os.environ, {"OAUTH2_DOMAIN": ""}, clear=False):
+        yield
 
 
 @pytest.fixture
