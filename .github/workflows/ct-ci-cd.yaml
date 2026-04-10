@@ -90,10 +90,6 @@ jobs:
 
           uv run mlflow run ./src/titanic/training -P path=all_titanic.csv --experiment-name ${{ env.EXPERIMENT_NAME }} --backend kubernetes --backend-config ./k8s/experiment/kubernetes_config.json
 
-      - name: Asleep kto-mlflow with dailyclean
-        run: |
-          curl -X POST $DAILYCLEAN_ROUTE_URL/pods/stop
-
       - name: Download model artifact
         run: |
           export MLFLOW_TRACKING_URI=$MLFLOW_TRACKING_ROUTE_URL
@@ -109,3 +105,7 @@ jobs:
         run: |
           docker build -f k8s/api/Dockerfile -t ${{ env.API_IMAGE_NAME }}:latest .
           docker push ${{ env.API_IMAGE_NAME }}:latest
+
+      - name: Asleep kto-mlflow with dailyclean
+        run: |
+          curl -X POST $DAILYCLEAN_ROUTE_URL/pods/stop
