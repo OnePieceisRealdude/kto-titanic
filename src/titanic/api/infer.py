@@ -1,3 +1,10 @@
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as HTTPSpanExporter
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk.resources import Resource
+
 import os
 import pickle
 from dataclasses import dataclass
@@ -13,6 +20,20 @@ JAEGER_ENDPOINT = os.getenv(
     "JAEGER_ENDPOINT",
     "http://jaeger.onepieceisrealdude-dev.svc.cluster.local:4318/v1/traces",
 )
+
+JAEGER_ENDPOINT = os.getenv("JAEGER_ENDPOINT", "http://jaeger-service:4318/v1/traces")
+
+resource = Resource(attributes={"service.name": "titanic-inference-api"})
+
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(HTTPSpanExporter(endpoint=JAEGER_ENDPOINT))
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer(__name__)
+
+app = FastAPI()
+FastAPIInstrumentor.instrument_app(app)
 
 app = FastAPI()
 
@@ -54,16 +75,22 @@ def health() -> dict:
 
 @app.post("/infer")
 def infer(passenger: Passenger, token: str = Depends(verify_token("api:read"))) -> list:
-    df_passenger = pd.DataFrame([passenger.to_dict()])
-    df_passenger["Sex"] = pd.Categorical(
-        df_passenger["Sex"],
-        categories=[Sex.FEMALE.value, Sex.MALE.value],
-    )
-    df_to_predict = pd.get_dummies(df_passenger)
+    with tracer.start_as_current_span("model_inference") as span:
+        span.set_attribute("passenger.pclass", passenger.pclass.value)
+        span.set_attribute("passenger.sex", passenger.sex.value)
+        span.set_attribute("passenger.sibsp", passenger.sibSp)
+        span.set_attribute("passenger.parch", passenger.parch)
 
-    feature_names = getattr(model, "feature_names_in_", None)
-    if isinstance(feature_names, (list, tuple, pd.Index)):
-        df_to_predict = df_to_predict.reindex(columns=feature_names, fill_value=0)
+        df_passenger = pd.DataFrame([passenger.to_dict()])
+        df_passenger["Sex"] = pd.Categorical(
+            df_passenger["Sex"],
+            categories=[Sex.FEMALE.value, Sex.MALE.value]
+        )
+        df_to_predict = pd.get_dummies(df_passenger)
 
-    res = model.predict(df_to_predict)
-    return res.tolist()
+        res = model.predict(df_to_predict)
+
+        span.set_attribute("prediction.result", int(res[0]))
+        span.add_event("prediction_completed", {"result": int(res[0])})
+
+        return res.tolist()
