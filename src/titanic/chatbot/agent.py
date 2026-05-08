@@ -117,8 +117,13 @@ class ChatbotAgent:
                         result = await tool.ainvoke(tool_args)
                         if hasattr(result, "content") and result.content:
                             content = result.content[0]
+
+                            if isinstance(content, dict) and "text" in content:
+                                return str(content["text"])
+
                             if hasattr(content, "text"):
                                 return content.text
+
                             return str(content)
                         return str(result)
 
