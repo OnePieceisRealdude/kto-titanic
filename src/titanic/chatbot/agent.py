@@ -60,6 +60,42 @@ def _make_otel_headers() -> dict[str, str]:
     inject(headers)
     return headers
 
+def _extract_tool_text(result: object) -> str:
+    """Extrait proprement le texte retourné par un tool MCP."""
+    if isinstance(result, str):
+        return result
+
+    if isinstance(result, dict):
+        if "text" in result:
+            return str(result["text"])
+        return str(result)
+
+    if isinstance(result, list) and result:
+        first = result[0]
+        if isinstance(first, dict) and "text" in first:
+            return str(first["text"])
+        if hasattr(first, "text"):
+            return str(first.text)
+        return str(first)
+
+    if hasattr(result, "content"):
+        content = result.content
+
+        if isinstance(content, str):
+            return content
+
+        if isinstance(content, list) and content:
+            first = content[0]
+            if isinstance(first, dict) and "text" in first:
+                return str(first["text"])
+            if hasattr(first, "text"):
+                return str(first.text)
+            return str(first)
+
+        return str(content)
+
+    return str(result)
+
 
 class ChatbotAgent:
     def __init__(self) -> None:
@@ -115,17 +151,7 @@ class ChatbotAgent:
                 for tool in tools:
                     if tool.name == tool_name:
                         result = await tool.ainvoke(tool_args)
-                        if hasattr(result, "content") and result.content:
-                            content = result.content[0]
-
-                            if isinstance(content, dict) and "text" in content:
-                                return str(content["text"])
-
-                            if hasattr(content, "text"):
-                                return content.text
-
-                            return str(content)
-                        return str(result)
+                        return _extract_tool_text(result)
 
             return str(response.content)
 
