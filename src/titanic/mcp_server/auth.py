@@ -30,7 +30,7 @@ class OAuth2TokenManager:
         return bool(self.token_url and self.client_id and self.client_secret)
 
     async def get_token(self) -> str | None:
-        """Récupère un token valide (depuis le cache ou en le renouvelant)."""
+        """Récupère un token valide depuis le cache ou en le renouvelant."""
         if not self.is_configured():
             return None
 

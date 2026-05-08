@@ -1,7 +1,9 @@
 from unittest.mock import patch, Mock, AsyncMock
-from titanic.mcp_server.server import mcp, predict_survival, health_check
+
 import pytest
 from starlette.requests import Request
+
+from titanic.mcp_server.server import mcp, predict_survival, health_check
 
 
 def test_mcp_server_configuration():
@@ -24,7 +26,7 @@ async def test_predict_survival_with_successful_api_call():
     ):
         mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
 
-        result = await predict_survival.fn(pclass=1, sex="female", sibsp=0, parch=0)
+        result = await predict_survival(pclass=1, sex="female", sibsp=0, parch=0)
 
         assert "SURVIVED" in result
         assert "Good news" in result
@@ -43,7 +45,7 @@ async def test_predict_survival_with_death_prediction():
     ):
         mock_client.return_value.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
 
-        result = await predict_survival.fn(pclass=3, sex="male", sibsp=0, parch=0)
+        result = await predict_survival(pclass=3, sex="male", sibsp=0, parch=0)
 
         assert "NOT have survived" in result
         assert "Unfortunately" in result
@@ -63,7 +65,7 @@ async def test_predict_survival_with_oauth2_token():
         mock_post = AsyncMock(return_value=mock_response)
         mock_client.return_value.__aenter__.return_value.post = mock_post
 
-        result = await predict_survival.fn(pclass=1, sex="female", sibsp=0, parch=0)
+        result = await predict_survival(pclass=1, sex="female", sibsp=0, parch=0)
 
         assert "SURVIVED" in result
         mock_get_token.assert_called_once()
@@ -81,7 +83,7 @@ async def test_predict_survival_handles_api_errors():
     ):
         mock_client.return_value.__aenter__.return_value.post = AsyncMock(side_effect=Exception("Connection timeout"))
 
-        result = await predict_survival.fn(pclass=1, sex="female", sibsp=0, parch=0)
+        result = await predict_survival(pclass=1, sex="female", sibsp=0, parch=0)
 
         assert "error" in result.lower()
         assert "Connection timeout" in result
@@ -90,7 +92,6 @@ async def test_predict_survival_handles_api_errors():
 @pytest.mark.asyncio
 async def test_health_check_returns_healthy():
     """Test que le health check retourne le bon statut."""
-
     mock_request = Mock(spec=Request)
     response = await health_check(mock_request)
 

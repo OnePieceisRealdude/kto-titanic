@@ -14,10 +14,11 @@ spec:
     spec:
       containers:
         - name: titanic-mcp-server
-          image: quay.io/onepieceisrealdude/titanic/mcp-server
+          image: quay.io/onepieceisrealdude/titanic/mcp-server:latest
+          imagePullPolicy: Always
           env:
             - name: TITANIC_API_URL
-              value: "http://titanic-api-service.onepieceisrealdude-dev.svc.cluster.local:8080"
+              value: "http://titanic-api-service:8080"
             - name: PORT
               value: "8000"
             - name: OAUTH2_DOMAIN
@@ -34,6 +35,8 @@ spec:
                   name: mcp-oauth2-credentials
                   key: client-secret
                   optional: true
+            - name: JAEGER_ENDPOINT
+              value: "http://jaeger:4318/v1/traces"
           ports:
             - containerPort: 8000
               name: http
@@ -51,11 +54,11 @@ spec:
             periodSeconds: 10
           resources:
             limits:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: "512Mi"
+              cpu: "500m"
             requests:
               memory: "128Mi"
-              cpu: "50m"
+              cpu: "100m"
 ---
 apiVersion: v1
 kind: Service

@@ -6,7 +6,7 @@ from titanic.chatbot.agent import ChatbotAgent
 def main() -> None:
     st.set_page_config(page_title="Titanic Survival Chatbot", page_icon="🚢", layout="centered")
 
-    st.title("🚢 Titanic Survival Prediction Chatbot")
+    st.title(" Titanic Survival Prediction Chatbot")
     st.markdown("Ask me about Titanic passenger survival predictions!")
 
     if "agent" not in st.session_state:
@@ -31,11 +31,11 @@ def main() -> None:
         st.session_state.messages.append({"role": "assistant", "content": response})
 
     with st.sidebar:
-        st.header("ℹ️ About")
+        st.header("ℹ About")
         st.markdown("""
         This chatbot uses:
         - **LangChain** for agent orchestration
-        - **GitHub Models** (gpt-4o-mini) - FREE with GitHub account
+        - **GitHub Models** (gpt-4o-mini)
         - **MCP Tools** to call Titanic inference API
 
         **Example questions:**
